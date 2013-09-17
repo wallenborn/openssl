@@ -146,7 +146,9 @@ static unsigned char md[MD_DIGEST_LENGTH];
 static long md_count[2]={0,0};
 static double entropy=0;
 static int initialized=0;
-
+#ifndef GETPID_IS_MEANINGLESS
+static pid_t old_pid=0;
+#endif
 static unsigned int crypto_lock_rand = 0; /* may be set only when a thread
                                            * holds CRYPTO_LOCK_RAND
                                            * (to prevent double locking) */
@@ -358,6 +360,11 @@ static int ssleay_rand_bytes(unsigned char *buf, int num, int pseudo)
 	EVP_MD_CTX m;
 #ifndef GETPID_IS_MEANINGLESS
 	pid_t curr_pid = getpid();
+	if (curr_pid != old_pid)
+	        {
+		initialized = 0;
+		old_pid = curr_pid;
+		}
 #endif
 	int do_stir_pool = 0;
 
