@@ -361,7 +361,7 @@ static int ssleay_rand_bytes(unsigned char *buf, int num, int pseudo)
 	EVP_MD_CTX m;
 #ifndef GETPID_IS_MEANINGLESS
 	pid_t curr_pid = getpid();
-        /* 
+        /*
          * A pid change means we should reseed the RNG.
          * The easiest way to accomplish this is to set initialized
          * to zero, this will cause the code further down to call
