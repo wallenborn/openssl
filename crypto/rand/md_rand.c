@@ -362,11 +362,10 @@ static int ssleay_rand_bytes(unsigned char *buf, int num, int pseudo)
 #ifndef GETPID_IS_MEANINGLESS
 	pid_t curr_pid = getpid();
         /* 
-         * A pid change means we should reseed the RNG. Rather than
-         * trying to add entropy on our own,  we can just set 
-         * initialized to zero, this will cause the code further down
-         * to call RAND_poll(),  and we leave it to openssl to pick
-         * a good entropy source.
+         * A pid change means we should reseed the RNG.
+         * The easiest way to accomplish this is to set initialized
+         * to zero, this will cause the code further down to call
+         * RAND_poll().
          */
 	if (curr_pid != old_pid)
 	        {
