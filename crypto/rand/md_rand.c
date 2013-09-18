@@ -149,6 +149,7 @@ static int initialized=0;
 #ifndef GETPID_IS_MEANINGLESS
 static pid_t old_pid=0;
 #endif
+
 static unsigned int crypto_lock_rand = 0; /* may be set only when a thread
                                            * holds CRYPTO_LOCK_RAND
                                            * (to prevent double locking) */
@@ -360,6 +361,13 @@ static int ssleay_rand_bytes(unsigned char *buf, int num, int pseudo)
 	EVP_MD_CTX m;
 #ifndef GETPID_IS_MEANINGLESS
 	pid_t curr_pid = getpid();
+        /* 
+         * A pid change means we should reseed the RNG. Rather than
+         * trying to add entropy on our own,  we can just set 
+         * initialized to zero, this will cause the code further down
+         * to call RAND_poll(),  and we leave it to openssl to pick
+         * a good entropy source.
+         */
 	if (curr_pid != old_pid)
 	        {
 		initialized = 0;
