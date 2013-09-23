@@ -2,15 +2,7 @@
  OpenSSL CHANGES
  _______________
 
- Changes between 1.0.x and 1.1.0  [xx XXX xxxx]
-
-  *) Add option SSL_OP_SAFARI_ECDHE_ECDSA_BUG (part of SSL_OP_ALL) which
-     avoids preferring ECDHE-ECDSA ciphers when the client appears to be
-     Safari on OS X.  Safari on OS X 10.8..10.8.3 advertises support for
-     several ECDHE-ECDSA ciphers, but fails to negotiate them.  The bug
-     is fixed in OS X 10.8.4, but Apple have ruled out both hot fixing
-     10.8..10.8.3 and forcing users to upgrade to 10.8.4 or newer.
-     [Rob Stradling, Adam Langley]
+ Changes between 1.0.2 and 1.1.0  [xx XXX xxxx]
 
   *) Experimental encrypt-then-mac support.
     
@@ -252,12 +244,6 @@
      security.
      [Emilia Käsper <emilia.kasper@esat.kuleuven.be> (Google)]
 
-  *) Initial experimental support for explicitly trusted non-root CAs. 
-     OpenSSL still tries to build a complete chain to a root but if an
-     intermediate CA has a trust setting included that is used. The first
-     setting is used: whether to trust or reject.
-     [Steve Henson]
-
   *) New -verify_name option in command line utilities to set verification
      parameters by name.
      [Steve Henson]
@@ -290,6 +276,18 @@
      [Steve Henson]
 
  Changes between 1.0.1e and 1.0.2 [xx XXX xxxx]
+
+  *) Add functions to allocate and set the fields of an ECDSA_METHOD
+     structure.
+     [Douglas E. Engert, Steve Henson]
+
+  *) Add option SSL_OP_SAFARI_ECDHE_ECDSA_BUG (part of SSL_OP_ALL) which
+     avoids preferring ECDHE-ECDSA ciphers when the client appears to be
+     Safari on OS X.  Safari on OS X 10.8..10.8.3 advertises support for
+     several ECDHE-ECDSA ciphers, but fails to negotiate them.  The bug
+     is fixed in OS X 10.8.4, but Apple have ruled out both hot fixing
+     10.8..10.8.3 and forcing users to upgrade to 10.8.4 or newer.
+     [Rob Stradling, Adam Langley]
 
   *) New functions OPENSSL_gmtime_diff and ASN1_TIME_diff to find the
      difference in days and seconds between two tm or ASN1_TIME structures.
@@ -461,12 +459,12 @@
   *) Fix OCSP checking.
      [Rob Stradling <rob.stradling@comodo.com> and Ben Laurie]
 
-  *) Backport support for partial chain verification: if an intermediate
-     certificate is explicitly trusted (using -addtrust option to x509
-     utility for example) the verification is sucessful even if the chain
-     is not complete.
-     The OCSP checking fix depends on this backport.
-     [Steve Henson and Rob Stradling <rob.stradling@comodo.com>]
+  *) Initial experimental support for explicitly trusted non-root CAs. 
+     OpenSSL still tries to build a complete chain to a root but if an
+     intermediate CA has a trust setting included that is used. The first
+     setting is used: whether to trust (e.g., -addtrust option to the x509
+     utility) or reject.
+     [Steve Henson]
 
   *) Add -trusted_first option which attempts to find certificates in the
      trusted store even if an untrusted chain is also supplied.
