@@ -752,6 +752,12 @@ struct ssl_session_st
  * TLS only.)  "Released" buffers are put onto a free-list in the context
  * or just freed (depending on the context's setting for freelist_max_len). */
 #define SSL_MODE_RELEASE_BUFFERS 0x00000010L
+/* Send the current time in the Random fields of the ClientHello and
+ * ServerHello records for compatibility with hypothetical implementations
+ * that require it.
+ */
+#define SSL_MODE_SEND_CLIENTHELLO_TIME 0x00000020L
+#define SSL_MODE_SEND_SERVERHELLO_TIME 0x00000040L
 
 /* Cert related flags */
 /* Many implementations ignore some aspects of the TLS standards such as
@@ -802,6 +808,12 @@ struct ssl_session_st
 #define SSL_CONF_FLAG_CLIENT		0x4
 #define SSL_CONF_FLAG_SERVER		0x8
 #define SSL_CONF_FLAG_SHOW_ERRORS	0x10
+#define SSL_CONF_FLAG_CERTIFICATE	0x20
+/* Configuration value types */
+#define SSL_CONF_TYPE_UNKNOWN		0x0
+#define SSL_CONF_TYPE_STRING		0x1
+#define SSL_CONF_TYPE_FILE		0x2
+#define SSL_CONF_TYPE_DIR		0x3
 
 /* Note: SSL[_CTX]_set_{options,mode} use |= op on the previous value,
  * they cannot be used to clear bits. */
@@ -2483,6 +2495,7 @@ int SSL_cache_hit(SSL *s);
 int SSL_is_server(SSL *s);
 
 SSL_CONF_CTX *SSL_CONF_CTX_new(void);
+int SSL_CONF_CTX_finish(SSL_CONF_CTX *cctx);
 void SSL_CONF_CTX_free(SSL_CONF_CTX *cctx);
 unsigned int SSL_CONF_CTX_set_flags(SSL_CONF_CTX *cctx, unsigned int flags);
 unsigned int SSL_CONF_CTX_clear_flags(SSL_CONF_CTX *cctx, unsigned int flags);
@@ -2493,6 +2506,7 @@ void SSL_CONF_CTX_set_ssl_ctx(SSL_CONF_CTX *cctx, SSL_CTX *ctx);
 
 int SSL_CONF_cmd(SSL_CONF_CTX *cctx, const char *cmd, const char *value);
 int SSL_CONF_cmd_argv(SSL_CONF_CTX *cctx, int *pargc, char ***pargv);
+int SSL_CONF_cmd_value_type(SSL_CONF_CTX *cctx, const char *cmd);
 
 #ifndef OPENSSL_NO_SSL_TRACE
 void SSL_trace(int write_p, int version, int content_type,

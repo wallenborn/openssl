@@ -1,11 +1,9 @@
 /* NOCW */
-/* demos/bio/saccept.c */
+/* demos/bio/saccept-conf.c */
 
 /* A minimal program to serve an SSL connection.
  * It uses blocking.
- * saccept host:port
- * host is the interface IP to use.  If any interface, use *:port
- * The default it *:4433
+ * It uses the SSL_CONF API with a configuration file.
  *
  * cc -I../../include saccept.c -L../.. -lssl -lcrypto -ldl
  */
@@ -14,44 +12,84 @@
 #include <signal.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
-
-#define CERT_FILE	"server.pem"
-
-BIO *in=NULL;
-
-void close_up()
-	{
-	if (in != NULL)
-		BIO_free(in);
-	}
+#include <openssl/conf.h>
 
 int main(int argc, char *argv[])
 	{
-	char *port=NULL;
+	char *port = "*:4433";
+	BIO *in=NULL;
 	BIO *ssl_bio,*tmp;
 	SSL_CTX *ctx;
+	SSL_CONF_CTX *cctx = NULL;
+	CONF *conf = NULL;
+	STACK_OF(CONF_VALUE) *sect = NULL;
+	CONF_VALUE *cnf;
+	long errline = -1;
 	char buf[512];
 	int ret=1,i;
-
-        if (argc <= 1)
-		port="*:4433";
-	else
-		port=argv[1];
-
-	signal(SIGINT,close_up);
 
 	SSL_load_error_strings();
 
 	/* Add ciphers and message digests */
 	OpenSSL_add_ssl_algorithms();
 
+	conf = NCONF_new(NULL);
+
+	if (NCONF_load(conf, "accept.cnf", &errline) <= 0)
+		{
+		if (errline <= 0)
+			fprintf(stderr, "Error processing config file\n");
+		else
+			fprintf(stderr, "Error on line %ld\n", errline);
+		goto err;
+		}
+
+	sect = NCONF_get_section(conf, "default");
+
+	if (sect == NULL)
+		{
+		fprintf(stderr, "Error retrieving default section\n");
+		goto err;
+		}
+
 	ctx=SSL_CTX_new(SSLv23_server_method());
-	if (!SSL_CTX_use_certificate_file(ctx,CERT_FILE,SSL_FILETYPE_PEM))
+	cctx = SSL_CONF_CTX_new();
+	SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
+	SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CERTIFICATE);
+	SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_FILE);
+	SSL_CONF_CTX_set_ssl_ctx(cctx, ctx);
+	for (i = 0; i < sk_CONF_VALUE_num(sect); i++)
+		{
+		int rv;
+		cnf = sk_CONF_VALUE_value(sect, i);
+		rv = SSL_CONF_cmd(cctx, cnf->name, cnf->value);
+		if (rv > 0)
+			continue;
+		if (rv != -2)
+			{
+			fprintf(stderr, "Error processing %s = %s\n",
+						cnf->name, cnf->value);
+			ERR_print_errors_fp(stderr);
+			goto err;
+			}
+		if (!strcmp(cnf->name, "Port"))
+			{
+			port = cnf->value;
+			}
+		else
+			{
+			fprintf(stderr, "Unknown configuration option %s\n",
+							cnf->name);
+			goto err;
+			}
+		}
+
+	if (!SSL_CONF_CTX_finish(cctx))
+		{
+		fprintf(stderr, "Finish error\n");
+		ERR_print_errors_fp(stderr);
 		goto err;
-	if (!SSL_CTX_use_PrivateKey_file(ctx,CERT_FILE,SSL_FILETYPE_PEM))
-		goto err;
-	if (!SSL_CTX_check_private_key(ctx))
-		goto err;
+		}
 
 	/* Setup server side SSL bio */
 	ssl_bio=BIO_new_ssl(ctx,0);

@@ -1,13 +1,11 @@
 /* NOCW */
-/* demos/bio/saccept.c */
+/* demos/bio/server-arg.c */
 
 /* A minimal program to serve an SSL connection.
  * It uses blocking.
- * saccept host:port
- * host is the interface IP to use.  If any interface, use *:port
- * The default it *:4433
+ * It use the SSL_CONF API with the command line.
  *
- * cc -I../../include saccept.c -L../.. -lssl -lcrypto -ldl
+ * cc -I../../include server-arg.c -L../.. -lssl -lcrypto -ldl
  */
 
 #include <stdio.h>
@@ -15,30 +13,18 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
-#define CERT_FILE	"server.pem"
-
-BIO *in=NULL;
-
-void close_up()
-	{
-	if (in != NULL)
-		BIO_free(in);
-	}
 
 int main(int argc, char *argv[])
 	{
-	char *port=NULL;
+	char *port = "*:4433";
 	BIO *ssl_bio,*tmp;
 	SSL_CTX *ctx;
+	SSL_CONF_CTX *cctx;
 	char buf[512];
+	BIO *in=NULL;
 	int ret=1,i;
-
-        if (argc <= 1)
-		port="*:4433";
-	else
-		port=argv[1];
-
-	signal(SIGINT,close_up);
+	char **args = argv + 1;
+	int nargs = argc - 1;
 
 	SSL_load_error_strings();
 
@@ -46,12 +32,56 @@ int main(int argc, char *argv[])
 	OpenSSL_add_ssl_algorithms();
 
 	ctx=SSL_CTX_new(SSLv23_server_method());
-	if (!SSL_CTX_use_certificate_file(ctx,CERT_FILE,SSL_FILETYPE_PEM))
+
+	cctx = SSL_CONF_CTX_new();
+	SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_SERVER);
+	SSL_CONF_CTX_set_flags(cctx, SSL_CONF_FLAG_CERTIFICATE);
+	SSL_CONF_CTX_set_ssl_ctx(cctx, ctx);
+	while(*args && **args == '-')
+		{
+		int rv;
+		/* Parse standard arguments */
+		rv = SSL_CONF_cmd_argv(cctx, &nargs, &args);
+		if (rv == -3)
+			{
+			fprintf(stderr, "Missing argument for %s\n", *args);
+			goto err;
+			}
+		if (rv < 0)
+			{
+			fprintf(stderr, "Error in command %s\n", *args);
+			ERR_print_errors_fp(stderr);
+			goto err;
+			}
+		/* If rv > 0 we processed something so proceed to next arg */
+		if (rv > 0)
+			continue;
+		/* Otherwise application specific argument processing */
+		if (!strcmp(*args, "-port"))
+			{
+			port = args[1];
+			if (port == NULL)
+				{
+				fprintf(stderr, "Missing -port argument\n");
+				goto err;
+				}
+			args += 2;
+			nargs -= 2;
+			continue;
+			}
+		else
+			{
+			fprintf(stderr, "Unknown argument %s\n", *args);
+			goto err;
+			}
+		}
+
+	if (!SSL_CONF_CTX_finish(cctx))
+		{
+		fprintf(stderr, "Finish error\n");
+		ERR_print_errors_fp(stderr);
 		goto err;
-	if (!SSL_CTX_use_PrivateKey_file(ctx,CERT_FILE,SSL_FILETYPE_PEM))
-		goto err;
-	if (!SSL_CTX_check_private_key(ctx))
-		goto err;
+		}
 
 	/* Setup server side SSL bio */
 	ssl_bio=BIO_new_ssl(ctx,0);

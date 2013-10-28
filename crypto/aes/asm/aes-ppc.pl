@@ -760,6 +760,7 @@ Lenc_compact_done:
 	blr
 	.long	0
 	.byte	0,12,0x14,0,0,0,0,0
+.size	.AES_encrypt,.-.AES_encrypt
 
 .globl	.AES_decrypt
 .align	7
@@ -1350,6 +1351,7 @@ Ldec_compact_done:
 	blr
 	.long	0
 	.byte	0,12,0x14,0,0,0,0,0
+.size	.AES_decrypt,.-.AES_decrypt
 
 .asciz	"AES for PPC, CRYPTOGAMS by <appro\@openssl.org>"
 .align	7

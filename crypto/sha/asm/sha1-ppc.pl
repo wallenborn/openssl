@@ -316,6 +316,7 @@ $code.=<<___;
 	blr
 	.long	0
 	.byte	0,12,0x14,0,0,0,0,0
+.size	.sha1_block_data_order,.-.sha1_block_data_order
 ___
 $code.=<<___;
 .asciz	"SHA1 block transform for PPC, CRYPTOGAMS by <appro\@fy.chalmers.se>"

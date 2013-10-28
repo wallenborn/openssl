@@ -244,7 +244,10 @@ static int nid_list[] =
 		NID_secp256k1, /* secp256k1 (22) */ 
 		NID_X9_62_prime256v1, /* secp256r1 (23) */ 
 		NID_secp384r1, /* secp384r1 (24) */
-		NID_secp521r1  /* secp521r1 (25) */	
+		NID_secp521r1,  /* secp521r1 (25) */	
+		NID_brainpoolP256r1,  /* brainpoolP256r1 (26) */	
+		NID_brainpoolP384r1,  /* brainpoolP384r1 (27) */	
+		NID_brainpoolP512r1  /* brainpool512r1 (28) */	
 	};
 
 
@@ -260,11 +263,14 @@ static const unsigned char eccurves_default[] =
 		0,14, /* sect571r1 (14) */ 
 		0,13, /* sect571k1 (13) */ 
 		0,25, /* secp521r1 (25) */	
+		0,28, /* brainpool512r1 (28) */	
 		0,11, /* sect409k1 (11) */ 
 		0,12, /* sect409r1 (12) */
+		0,27, /* brainpoolP384r1 (27) */	
 		0,24, /* secp384r1 (24) */
 		0,9,  /* sect283k1 (9) */
 		0,10, /* sect283r1 (10) */ 
+		0,26, /* brainpoolP256r1 (26) */	
 		0,22, /* secp256k1 (22) */ 
 		0,23, /* secp256r1 (23) */ 
 		0,8,  /* sect239k1 (8) */ 
@@ -354,6 +360,12 @@ int tls1_ec_nid2curve_id(int nid)
 		return 24;
 	case NID_secp521r1:  /* secp521r1 (25) */	
 		return 25;
+	case NID_brainpoolP256r1:  /* brainpoolP256r1 (26) */
+		return 26;
+	case NID_brainpoolP384r1:  /* brainpoolP384r1 (27) */
+		return 27;
+	case NID_brainpoolP512r1:  /* brainpool512r1 (28) */
+		return 28;
 	default:
 		return 0;
 		}
@@ -864,9 +876,6 @@ static unsigned char tls12_sigalgs[] = {
 #ifndef OPENSSL_NO_SHA
 	tlsext_sigalg(TLSEXT_hash_sha1)
 #endif
-#ifndef OPENSSL_NO_MD5
-	tlsext_sigalg_rsa(TLSEXT_hash_md5)
-#endif
 };
 #ifndef OPENSSL_NO_ECDSA
 static unsigned char suiteb_sigalgs[] = {
@@ -909,13 +918,7 @@ size_t tls12_get_psigalgs(SSL *s, const unsigned char **psigs)
 	else
 		{
 		*psigs = tls12_sigalgs;
-#ifdef OPENSSL_FIPS
-		/* If FIPS mode don't include MD5 which is last */
-		if (FIPS_mode())
-			return sizeof(tls12_sigalgs) - 2;
-		else
-#endif
-			return sizeof(tls12_sigalgs);
+		return sizeof(tls12_sigalgs);
 		}
 	}
 /* Check signature algorithm is consistent with sent supported signature
